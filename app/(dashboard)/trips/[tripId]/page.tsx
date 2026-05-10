@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   format, parseISO, differenceInDays, isSameDay, eachDayOfInterval, 
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, 
-  isWithinInterval, addMonths, subMonths
+  isWithinInterval, addMonths, subMonths, startOfDay, endOfDay
 } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
 import { 
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -239,7 +239,7 @@ export default function TripViewPage() {
         const dayActivities = allActivities.filter(act => {
           // In a real app, activities would have exact dates. 
           // For now, we simulate by checking which stop covers this day.
-          const stop = stops.find(s => isWithinInterval(cloneDay, { 
+          const stop = stops.find(s => s.startDate && s.endDate && isWithinInterval(cloneDay, { 
             start: startOfDay(parseISO(s.startDate)), 
             end: endOfDay(parseISO(s.endDate)) 
           }));
@@ -351,21 +351,17 @@ export default function TripViewPage() {
             </div>
             
             <div className="flex items-center gap-2">
-              <Button size="sm" className="bg-white text-teal-700 hover:bg-gray-100" asChild>
-                <Link href={`/trips/${tripId}/build`}>
+              <Link href={`/trips/${tripId}/build`} className={buttonVariants({ size: "sm", className: "bg-white text-teal-700 hover:bg-gray-100" })}>
                   <Edit2 className="w-4 h-4 mr-2" />
                   Edit Trip
-                </Link>
-              </Button>
+              </Link>
               <Button size="sm" variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm" onClick={handleShare}>
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm px-2">
+                <DropdownMenuTrigger render={<Button size="sm" variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm px-2" />}>
                     <MoreVertical className="w-4 h-4" />
-                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => router.push(`/trips/${tripId}/notes`)}>
@@ -414,9 +410,9 @@ export default function TripViewPage() {
               {stops.length === 0 ? (
                 <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                   <p className="text-gray-500 mb-4">No stops added yet.</p>
-                  <Button asChild className="bg-teal-600 hover:bg-teal-700">
-                    <Link href={`/trips/${tripId}/build`}>Add Your First Stop</Link>
-                  </Button>
+                  <Link href={`/trips/${tripId}/build`} className={buttonVariants({ className: "bg-teal-600 hover:bg-teal-700" })}>
+                    Add Your First Stop
+                  </Link>
                 </div>
               ) : (
                 stops.map((stop, stopIndex) => (
@@ -431,7 +427,13 @@ export default function TripViewPage() {
                           <div>
                             <h3 className="text-lg font-bold text-gray-800">📍 {stop.cityName}, {stop.country}</h3>
                             <p className="text-sm text-gray-500">
-                              {format(parseISO(stop.startDate), "MMM d")} — {format(parseISO(stop.endDate), "MMM d, yyyy")}
+                              {stop.startDate && stop.endDate ? (
+                                <>
+                                  {format(parseISO(stop.startDate), "MMM d")} — {format(parseISO(stop.endDate), "MMM d, yyyy")}
+                                </>
+                              ) : (
+                                <span>Dates TBD</span>
+                              )}
                             </p>
                           </div>
                         </div>
@@ -564,11 +566,9 @@ export default function TripViewPage() {
                 </p>
               </div>
 
-              <Button variant="outline" className="w-full text-teal-700 hover:bg-teal-50 border-teal-200" asChild>
-                <Link href={`/trips/${tripId}/invoice`}>
+              <Link href={`/trips/${tripId}/invoice`} className={buttonVariants({ variant: "outline", className: "w-full text-teal-700 hover:bg-teal-50 border-teal-200" })}>
                   View Full Invoice
-                </Link>
-              </Button>
+              </Link>
             </div>
           </div>
 
@@ -576,21 +576,15 @@ export default function TripViewPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <h3 className="font-bold text-lg text-gray-800 mb-4">Quick Links</h3>
             <div className="space-y-2">
-              <Button variant="ghost" className="w-full justify-start text-gray-700 hover:text-teal-700 hover:bg-teal-50" asChild>
-                <Link href={`/trips/${tripId}/notes`}>
+              <Link href={`/trips/${tripId}/notes`} className={buttonVariants({ variant: "ghost", className: "w-full justify-start text-gray-700 hover:text-teal-700 hover:bg-teal-50" })}>
                   <FileText className="w-4 h-4 mr-3" /> Trip Notes
-                </Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-gray-700 hover:text-teal-700 hover:bg-teal-50" asChild>
-                <Link href={`/trips/${tripId}/checklist`}>
+              </Link>
+              <Link href={`/trips/${tripId}/checklist`} className={buttonVariants({ variant: "ghost", className: "w-full justify-start text-gray-700 hover:text-teal-700 hover:bg-teal-50" })}>
                   <CheckSquare className="w-4 h-4 mr-3" /> Packing Checklist
-                </Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-gray-700 hover:text-teal-700 hover:bg-teal-50" asChild>
-                <Link href={`/trips/${tripId}/invoice`}>
+              </Link>
+              <Link href={`/trips/${tripId}/invoice`} className={buttonVariants({ variant: "ghost", className: "w-full justify-start text-gray-700 hover:text-teal-700 hover:bg-teal-50" })}>
                   <Receipt className="w-4 h-4 mr-3" /> Expense Invoice
-                </Link>
-              </Button>
+              </Link>
             </div>
           </div>
 

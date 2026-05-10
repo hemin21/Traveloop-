@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/components/AuthProvider";
 import useSWR from "swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -111,7 +111,7 @@ export default function MyTripsPage() {
 
   // Client-side Filtering
   let filteredTrips = trips.filter((trip) => 
-    trip.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (trip.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Client-side Sorting

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -82,8 +82,16 @@ export default function NewTripPage() {
         body: JSON.stringify(payload),
       });
 
+      let errorMessage = "An error occurred while creating the trip. Please try again.";
+      
       if (!res.ok) {
-        throw new Error("Failed to create trip");
+        try {
+          const errData = await res.json();
+          errorMessage = errData.error || errorMessage;
+        } catch (e) {
+          errorMessage = `Server Error: ${res.status} ${res.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await res.json();
@@ -93,9 +101,9 @@ export default function NewTripPage() {
       
       // Redirect to the build itinerary page
       router.push(`/trips/${tripId}/build`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("An error occurred while creating the trip. Please try again.");
+      toast.error(error.message || "An error occurred while creating the trip.");
       setIsSubmitting(false);
     }
   };

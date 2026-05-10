@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Search, MapPin, Plus, ArrowRight, Calendar, Map as MapIcon, Globe } from 'lucide-react';
+import { Search, MapPin, Plus, ArrowRight, Calendar, Map as MapIcon, Globe, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'react-hot-toast';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -38,6 +39,21 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLoadDemoData = async () => {
+    try {
+      const toastId = toast.loading('Loading demo data...');
+      const res = await fetch('/api/seed/user', { method: 'POST' });
+      if (res.ok) {
+        toast.success('Demo data loaded successfully!', { id: toastId });
+        // Optionally trigger a re-validation of SWR cache here
+      } else {
+        toast.error('Failed to load demo data.', { id: toastId });
+      }
+    } catch (error) {
+      toast.error('Error loading demo data.');
+    }
+  };
+
   // Calculate stats
   const tripsArray = Array.isArray(allTrips) ? allTrips : [];
   const totalTrips = tripsArray.length || 0;
@@ -63,11 +79,20 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 pb-16 relative min-h-[calc(100vh-100px)]">
       {/* Welcome Greeting */}
-      {isLoaded && user && (
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Welcome back, {user.firstName || user.username || 'Traveler'}!
-        </h1>
-      )}
+      <div className="flex items-center justify-between">
+        {isLoaded && user && (
+          <h1 className="text-2xl font-semibold text-gray-800">
+            Welcome back, {user.firstName || user.username || 'Traveler'}!
+          </h1>
+        )}
+        
+        {process.env.NODE_ENV === 'development' && (
+          <Button onClick={handleLoadDemoData} variant="outline" className="flex items-center gap-2">
+            <Database size={16} />
+            <span className="hidden sm:inline">Load Demo Data</span>
+          </Button>
+        )}
+      </div>
 
       {/* 1. Hero Banner */}
       <section className="relative w-full h-[280px] rounded-2xl overflow-hidden bg-gradient-to-r from-teal-600 to-teal-800 shadow-xl flex flex-col items-center justify-center p-6 text-center">

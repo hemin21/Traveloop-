@@ -121,13 +121,24 @@ export default function CitiesSearchPage() {
       return;
     }
     
+    const toastId = toast.loading(`Adding ${city.name} to trip...`);
     try {
-      // Mocking the POST since API might not exist yet
-      toast.success(`${city.name} added to your trip!`);
-      // In a real app:
-      // await fetch(`/api/trips/${selectedTripId}/stops`, { method: "POST", body: JSON.stringify(city) });
+      const res = await fetch(`/api/trips/${selectedTripId}/stops`, { 
+        method: "PATCH", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          city: city.name,
+          country: city.country
+        }) 
+      });
+      
+      if (!res.ok) throw new Error("Server error");
+      
+      toast.success(`${city.name} added to your itinerary!`, { id: toastId });
+      // Clear state so users don't accidentally re-add same trip next time or something 
+      // setSelectedTripId(""); 
     } catch (e) {
-      toast.error("Failed to add city.");
+      toast.error("Failed to add city.", { id: toastId });
     }
   };
 
