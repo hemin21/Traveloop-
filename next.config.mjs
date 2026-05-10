@@ -14,8 +14,9 @@ const nextConfig = {
       },
     ],
   },
-  // Prevent mongoose from being bundled — it must run as a native Node module
-  serverExternalPackages: ['mongoose'],
+  experimental: {
+    serverExternalPackages: ['mongoose'],
+  },
   // Reduce unnecessary re-renders
   reactStrictMode: false,
 };
