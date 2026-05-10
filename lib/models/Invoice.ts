@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IInvoiceItem {
   category: string;
   description: string;
-  quantity: number;
+  qty: number;
   unitCost: number;
   amount: number;
 }
@@ -24,7 +24,7 @@ export interface IInvoice extends Document {
 const InvoiceItemSchema: Schema = new Schema({
   category: { type: String, required: true },
   description: { type: String, required: true },
-  quantity: { type: Number, required: true },
+  qty: { type: Number, required: true },
   unitCost: { type: Number, required: true },
   amount: { type: Number, required: true },
 }, { _id: false });

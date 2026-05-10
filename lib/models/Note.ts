@@ -14,6 +14,7 @@ export interface INote extends Document {
 const NoteSchema: Schema = new Schema({
   tripId: { type: Schema.Types.ObjectId, ref: 'Trip', required: true },
   stopId: { type: Schema.Types.ObjectId, ref: 'Stop' },
+  stop: { type: String },
   userId: { type: String, required: true },
   title: { type: String, required: true },
   content: { type: String, required: true },

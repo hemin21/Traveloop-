@@ -2,10 +2,10 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IStop extends Document {
   tripId: mongoose.Types.ObjectId;
-  cityName: string;
-  country: string;
-  startDate: Date;
-  endDate: Date;
+  city: string;
+  country?: string;
+  startDate?: Date;
+  endDate?: Date;
   order: number;
   budget?: number;
   notes?: string;
@@ -14,10 +14,10 @@ export interface IStop extends Document {
 
 const StopSchema: Schema = new Schema({
   tripId: { type: Schema.Types.ObjectId, ref: 'Trip', required: true },
-  cityName: { type: String, required: true },
-  country: { type: String, required: true },
-  startDate: { type: Date, required: true },
-  endDate: { type: Date, required: true },
+  city: { type: String, required: true },
+  country: { type: String },
+  startDate: { type: Date },
+  endDate: { type: Date },
   order: { type: Number, required: true },
   budget: { type: Number },
   notes: { type: String },

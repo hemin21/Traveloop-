@@ -35,4 +35,5 @@ async function connectToDatabase() {
   return cached.conn;
 }
 
+export { connectToDatabase };
 export default connectToDatabase;

@@ -7,6 +7,8 @@ export interface ICommunityPost extends Document {
   userPhoto?: string;
   content: string;
   image?: string;
+  region?: string;
+  tripType?: string;
   tags: string[];
   likes: string[];
   createdAt: Date;
@@ -19,6 +21,8 @@ const CommunityPostSchema: Schema = new Schema({
   userPhoto: { type: String },
   content: { type: String, required: true },
   image: { type: String },
+  region: { type: String },
+  tripType: { type: String },
   tags: { type: [String], default: [] },
   likes: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now },
