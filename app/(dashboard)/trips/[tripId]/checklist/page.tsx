@@ -87,16 +87,13 @@ export default function ChecklistPage() {
   ];
   const trips = tripsData?.trips || (Array.isArray(tripsData) ? tripsData : mockTrips);
   
-  const currentTrip = trips.find((t: any) => t._id === tripId) || tripData || { _id: tripId, name: "Paris & Rome Adventure" };
-  const tripName = currentTrip.name;
+  const currentTrip = trips.find((t: any) => t._id === tripId) || tripData || { _id: tripId, title: "Paris & Rome Adventure" };
+  const tripName = currentTrip.title || currentTrip.name || "Unknown Trip";
 
   // Initialize items state
   useEffect(() => {
-    if (packingData && packingData.items && packingData.items.length > 0) {
+    if (packingData && packingData.items) {
       setItems(packingData.items);
-    } else if (!isLoadingPacking) {
-      // Auto-populate with defaults on first load if empty
-      setItems(defaultItems);
     }
   }, [packingData, isLoadingPacking]);
 
@@ -123,10 +120,13 @@ export default function ChecklistPage() {
     setItems(prev => prev.map(item => item.id === id ? { ...item, isPacked } : item));
     
     try {
-      // Mock API call: await fetch(`/api/packing/${tripId}`, { method: 'PATCH', body: JSON.stringify({ itemId: id, isPacked }) });
+      await fetch(`/api/packing/${tripId}`, { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId: id, isPacked }) 
+      });
     } catch (e) {
       toast.error("Failed to update item.");
-      // Revert on failure (simplified)
       setItems(prev => prev.map(item => item.id === id ? { ...item, isPacked: !isPacked } : item));
     }
   };
@@ -134,31 +134,28 @@ export default function ChecklistPage() {
   const deleteItem = async (id: string) => {
     setItems(prev => prev.filter(item => item.id !== id));
     toast.success("Item removed");
-    // Mock API call: await fetch(`/api/packing/${tripId}?itemId=${id}`, { method: 'DELETE' });
+    await fetch(`/api/packing/${tripId}?itemId=${id}`, { method: 'DELETE' });
   };
 
   const addItem = async () => {
     if (!newItemName.trim()) return;
     
-    const newItem = {
-      id: Date.now().toString(),
-      name: newItemName.trim(),
-      category: newItemCategory,
-      isPacked: false
-    };
-
-    setItems(prev => [...prev, newItem]);
+    const res = await fetch(`/api/packing/${tripId}`, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newItemName.trim(), category: newItemCategory }) 
+    });
+    const savedItem = await res.json();
+    setItems(prev => [...prev, savedItem]);
     setNewItemName("");
     toast.success("Item added");
-    
-    // Mock API call: await fetch(`/api/packing/${tripId}`, { method: 'POST', body: JSON.stringify(newItem) });
   };
 
   const handleResetAll = async () => {
     setItems(prev => prev.map(item => ({ ...item, isPacked: false })));
     setIsResetDialogOpen(false);
     toast.success("All items reset to unpacked");
-    // Mock API call: await fetch(`/api/packing/${tripId}/reset`, { method: 'POST' });
+    await fetch(`/api/packing/${tripId}/reset`, { method: 'POST' });
   };
 
   const handleShare = () => {
@@ -206,7 +203,7 @@ export default function ChecklistPage() {
             <SelectContent>
               {trips.map((t: any) => (
                 <SelectItem key={t._id} value={t._id}>
-                  Trip: {t.name}
+                  Trip: {t.title || t.name || "Unknown"}
                 </SelectItem>
               ))}
             </SelectContent>

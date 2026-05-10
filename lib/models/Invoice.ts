@@ -42,4 +42,7 @@ const InvoiceSchema: Schema = new Schema({
   generatedDate: { type: Date, default: Date.now },
 });
 
+// Indexes for fast lookups
+InvoiceSchema.index({ tripId: 1 }, { unique: true }); // one invoice per trip
+
 export default mongoose.models.Invoice || mongoose.model<IInvoice>('Invoice', InvoiceSchema);

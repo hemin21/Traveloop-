@@ -21,4 +21,8 @@ const NoteSchema: Schema = new Schema({
   day: { type: Number },
 }, { timestamps: true });
 
+// Indexes for fast lookups
+NoteSchema.index({ tripId: 1, userId: 1 }); // notes per trip per user
+NoteSchema.index({ stopId: 1 });             // notes per stop
+
 export default mongoose.models.Note || mongoose.model<INote>('Note', NoteSchema);

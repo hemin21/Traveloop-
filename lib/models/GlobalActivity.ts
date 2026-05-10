@@ -24,4 +24,8 @@ const GlobalActivitySchema: Schema = new Schema({
   rating: { type: Number },
 });
 
+// Indexes for fast search
+GlobalActivitySchema.index({ city: 1 });          // filter by city
+GlobalActivitySchema.index({ name: 'text', description: 'text' }); // text search
+
 export default mongoose.models.GlobalActivity || mongoose.model<IGlobalActivity>('GlobalActivity', GlobalActivitySchema);

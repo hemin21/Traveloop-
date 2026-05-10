@@ -12,6 +12,7 @@ export interface ITrip extends Document {
   shareToken?: string;
   totalBudget?: number;
   totalSpent: number;
+  currency: string;
   collaborators: string[];
   stops: mongoose.Types.ObjectId[];
   createdAt: Date;
@@ -30,8 +31,13 @@ const TripSchema: Schema = new Schema({
   shareToken: { type: String },
   totalBudget: { type: Number },
   totalSpent: { type: Number, default: 0 },
+  currency: { type: String, default: 'USD' },
   collaborators: { type: [String], default: [] },
   stops: [{ type: Schema.Types.ObjectId, ref: 'Stop' }],
 }, { timestamps: true });
+
+// Indexes for fast lookups
+TripSchema.index({ userId: 1, createdAt: -1 }); // list trips by user, newest first
+TripSchema.index({ isPublic: 1, createdAt: -1 }); // community / public trips
 
 export default mongoose.models.Trip || mongoose.model<ITrip>('Trip', TripSchema);

@@ -23,4 +23,9 @@ const CitySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes for fast search
+CitySchema.index({ name: 1 });           // city lookup by name
+CitySchema.index({ country: 1 });        // filter by country
+CitySchema.index({ name: 'text', description: 'text' }); // text search
+
 export default mongoose.models.City || mongoose.model<ICity>("City", CitySchema);

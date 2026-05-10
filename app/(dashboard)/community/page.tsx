@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useEffect } from "react";
 import useSWR from "swr";
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useUser } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { formatDistanceToNow, format, differenceInDays } from "date-fns";
 import { 
   Users, Search, Heart, Copy, Share2, MessageCircle, 
@@ -41,7 +42,6 @@ const fetcher = async (url: string) => {
 
 export default function CommunityPage() {
   const { user, isSignedIn, isLoaded } = useUser();
-  const { openSignIn } = useClerk();
   const router = useRouter();
 
   // Controls state
@@ -153,36 +153,71 @@ export default function CommunityPage() {
   const myTrips = myTripsData?.trips || mockMyTrips;
 
   // Actions
-  const handleLike = (postId: string, currentlyLiked: boolean) => {
+  const handleLike = async (postId: string, currentlyLiked: boolean) => {
     if (!isSignedIn) {
       toast("Please sign in to like trips.", { icon: "🔒" });
-      openSignIn();
+      router.push("/sign-in");
       return;
     }
+    
+    // Optimistic UI Update
     setPosts(posts.map(p => {
       if (p._id === postId) {
         return {
           ...p,
           isLikedByMe: !currentlyLiked,
-          likes: currentlyLiked ? p.likes - 1 : p.likes + 1
+          likes: currentlyLiked ? Math.max(0, p.likes - 1) : p.likes + 1
         };
       }
       return p;
     }));
-    // Mock API call
+
+    try {
+      const response = await fetch(`/api/community/${postId}/like`, { method: "POST" });
+      if (!response.ok) throw new Error("Failed to like");
+    } catch (err) {
+      // Rollback on error
+      setPosts(posts.map(p => {
+        if (p._id === postId) {
+          return {
+            ...p,
+            isLikedByMe: currentlyLiked,
+            likes: currentlyLiked ? p.likes : Math.max(0, p.likes - 1)
+          };
+        }
+        return p;
+      }));
+      toast.error("Error recording like. Try again.");
+    }
   };
 
-  const handleCopyTrip = (tripId: string, title: string) => {
+  const handleCopyTrip = async (tripId: string, title: string) => {
     if (!isSignedIn) {
       toast("Sign in to copy this trip to your account.", { icon: "🔒" });
-      openSignIn();
+      router.push("/sign-in");
       return;
     }
-    toast.success(`"${title}" copied to your trips!`);
-    // Mock API: await fetch('/api/trips', { method: 'POST', body: JSON.stringify({ copyFrom: tripId }) })
-    setTimeout(() => {
-      router.push(`/trips/new-copied-id`); // Mock redirect
-    }, 1000);
+
+    const loadToast = toast.loading(`Cloning "${title}" to your account...`);
+
+    try {
+      const res = await fetch('/api/trips', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ copyFrom: tripId }) 
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to copy trip");
+      }
+      const newTrip = await res.json();
+      
+      toast.success(`"${title}" copied successfully!`, { id: loadToast });
+      
+      router.push(`/trips/${newTrip._id}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to copy this trip.", { id: loadToast });
+    }
   };
 
   const handleSharePost = (id: string) => {
@@ -190,15 +225,37 @@ export default function CommunityPage() {
     toast.success("Link copied to clipboard!");
   };
 
-  const handleShareMyTrip = () => {
+  const handleShareMyTrip = async () => {
     if (!selectedTripToShare) return;
     const selected = myTrips.find(t => t._id === selectedTripToShare);
     if (selected && !selected.isPublic) {
       toast.error("Trip must be marked as public in settings first.");
       return;
     }
-    toast.success("Trip shared with the community!");
-    setIsShareDialogOpen(false);
+
+    const loadingId = toast.loading("Sharing trip with community...");
+
+    try {
+      const res = await fetch('/api/community', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          tripId: selectedTripToShare, 
+          content: `Sharing my ${selected.name} itinerary!`,
+          region: "Europe", // Defaults for this flow, you can expand to manual inputs
+          tripType: "Group",
+          tags: ["Travel", "Itinerary"]
+        })
+      });
+      
+      if (!res.ok) throw new Error("Failed to post.");
+      
+      toast.success("Trip shared with the community!", { id: loadingId });
+      setIsShareDialogOpen(false);
+      window.location.reload(); // Quick refresh to see new post
+    } catch (err) {
+      toast.error("Failed to share trip.", { id: loadingId });
+    }
   };
 
   // Filtering & Sorting
@@ -440,9 +497,11 @@ export default function CommunityPage() {
                     
                     {/* Post Header */}
                     <div className="p-4 sm:p-5 flex items-center gap-3">
-                      <img 
+                      <Image 
                         src={post.user.avatar} 
                         alt={post.user.name} 
+                        width={40}
+                        height={40}
                         className="w-10 h-10 rounded-full bg-gray-100 object-cover"
                       />
                       <div>

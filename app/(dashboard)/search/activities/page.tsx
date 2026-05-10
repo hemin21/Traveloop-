@@ -72,6 +72,12 @@ function ActivitySearchContent() {
 
   const { data: tripsData } = useSWR("/api/trips", fetcher);
   
+  // Fetch specific trip details to get REAL stops list
+  const { data: activeTripDetails } = useSWR(
+    selectedTripId ? `/api/trips/${selectedTripId}` : null, 
+    fetcher
+  );
+
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
@@ -126,20 +132,24 @@ function ActivitySearchContent() {
       toast.error("Please select a stop to add this activity to.");
       return;
     }
+    const loadingId = toast.loading("Adding activity to your trip...");
     try {
-      toast.success(`${act.name} added to your itinerary!`);
-      // Real API call would go here
+      const response = await fetch(`/api/trips/${selectedTripId}/stops/${selectedStopId}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(act)
+      });
+
+      if (!response.ok) throw new Error("Failed to save");
+
+      toast.success(`${act.name} added to your itinerary!`, { id: loadingId });
     } catch (e) {
-      toast.error("Failed to add activity.");
+      toast.error("Failed to add activity.", { id: loadingId });
     }
   };
 
-  const selectedTripObj = trips.find((t: any) => t._id === selectedTripId);
-  // Assuming trip object has stops populated or we fetch them. Since we mock, we'll assume trip.stops exists or just mock it.
-  const stopsForSelectedTrip = selectedTripObj?.stops || [
-    { _id: "stop1", cityName: "Paris", country: "France" },
-    { _id: "stop2", cityName: "Rome", country: "Italy" }
-  ];
+  // Dynamic stops mapping - we prioritize the fetched data
+  const stopsForSelectedTrip = activeTripDetails?.stops || [];
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500 pb-20">
@@ -315,11 +325,15 @@ function ActivitySearchContent() {
                                 <SelectTrigger>
                                   <SelectValue placeholder="Choose a destination stop..." />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  {stopsForSelectedTrip.map((s: any) => (
-                                    <SelectItem key={s._id} value={s._id}>{s.cityName}</SelectItem>
-                                  ))}
-                                </SelectContent>
+                                  <SelectContent>
+                                    {stopsForSelectedTrip.length === 0 ? (
+                                      <SelectItem value="none" disabled>No stops in this trip</SelectItem>
+                                    ) : (
+                                      stopsForSelectedTrip.map((s: any) => (
+                                        <SelectItem key={s._id || s.id} value={s._id || s.id}>{s.city}</SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
                               </Select>
                             </div>
                           )}

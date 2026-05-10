@@ -28,4 +28,9 @@ const CommunityPostSchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Indexes for performance
+CommunityPostSchema.index({ createdAt: -1 });   // community feed sort
+CommunityPostSchema.index({ tripId: 1 });        // posts by trip
+CommunityPostSchema.index({ userId: 1 });        // posts by user
+
 export default mongoose.models.CommunityPost || mongoose.model<ICommunityPost>('CommunityPost', CommunityPostSchema);

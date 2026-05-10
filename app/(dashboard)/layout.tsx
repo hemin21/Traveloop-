@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useUser, UserButton } from '@clerk/nextjs';
+import { useUser } from '@/components/AuthProvider';
+import UserButton from '@/components/UserButton';
+import GlobalSearch from '@/components/GlobalSearch';
 import {
   Compass,
   Search,
@@ -140,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {isLoaded && user && (
             <div className="flex items-center gap-3 px-4 py-3 mt-2 text-sm text-gray-700 bg-gray-50 rounded-lg mx-3">
               <div className="shrink-0">
-                <UserButton afterSignOutUrl="/" />
+                <UserButton />
               </div>
               <span className="font-medium truncate">{user.fullName || user.username || 'User'}</span>
             </div>
@@ -165,33 +167,62 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
 
-          <div className="flex-1 max-w-xl px-4 mx-auto lg:mx-8">
-            <div 
-              className="relative flex items-center w-full h-10 px-4 transition-colors bg-gray-100 rounded-full cursor-text hover:bg-gray-200"
-              onClick={() => router.push('/search/cities')}
-            >
-              <Search className="text-gray-500" size={18} />
-              <span className="ml-3 text-sm text-gray-500">Search cities, activities...</span>
-            </div>
-          </div>
+          <GlobalSearch />
 
           <div className="flex items-center gap-3 lg:gap-4">
             <button className="p-2 text-gray-500 transition-colors rounded-full hover:bg-teal-50 hover:text-teal-700">
               <Bell size={20} />
             </button>
             <div className="hidden lg:block shrink-0">
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
             </div>
           </div>
         </header>
 
         {/* Page Content */}
         <main className="flex-1 p-4 overflow-y-auto bg-teal-50 lg:p-6">
-          <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-7xl pb-16 lg:pb-0">
             {children}
           </div>
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around h-16 bg-white border-t border-teal-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe">
+        {[
+          { name: 'Home', href: '/', icon: Home },
+          { name: 'Trips', href: '/trips', icon: MapIcon },
+          { name: 'Add', href: '/trips/new', icon: PlusCircle, isMain: true },
+          { name: 'Search', href: '/search/cities', icon: Search },
+          { name: 'Profile', href: '/profile', icon: User },
+        ].map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
+
+          if (item.isMain) {
+            return (
+              <Link 
+                key={item.name} 
+                href={item.href}
+                className="relative flex items-center justify-center w-12 h-12 -mt-6 text-white bg-teal-600 rounded-full shadow-lg hover:bg-teal-700"
+              >
+                <Icon size={24} />
+              </Link>
+            );
+          }
+
+          return (
+            <Link 
+              key={item.name} 
+              href={item.href}
+              className={`flex flex-col items-center justify-center w-16 gap-1 ${isActive ? 'text-teal-600' : 'text-gray-500 hover:text-teal-600'}`}
+            >
+              <Icon size={20} className={isActive ? 'fill-teal-50' : ''} />
+              <span className="text-[10px] font-medium">{item.name}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

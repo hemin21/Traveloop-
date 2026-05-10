@@ -26,4 +26,7 @@ const ActivitySchema: Schema = new Schema({
   isCustom: { type: Boolean, default: true },
 });
 
+// Index for fast lookups
+ActivitySchema.index({ stopId: 1 }); // fetch all activities for a stop
+
 export default mongoose.models.Activity || mongoose.model<IActivity>('Activity', ActivitySchema);

@@ -24,4 +24,7 @@ const StopSchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Indexes for fast lookups
+StopSchema.index({ tripId: 1, order: 1 }); // fetch + sort stops for a trip
+
 export default mongoose.models.Stop || mongoose.model<IStop>('Stop', StopSchema);

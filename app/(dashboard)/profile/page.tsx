@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useUser } from "@/components/AuthProvider";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
+import Image from "next/image";
 import { format } from "date-fns";
 import { 
   Mail, Phone, MapPin, Settings, Camera, Lock, 
@@ -43,7 +45,7 @@ const fetcher = async (url: string) => {
 
 export default function ProfilePage() {
   const { user, isLoaded: isUserLoaded } = useUser();
-  const { signOut } = useClerk();
+  const router = useRouter();
 
   const [isEditing, setIsEditing] = useState(false);
   const [showDangerZone, setShowDangerZone] = useState(false);
@@ -101,15 +103,15 @@ export default function ProfilePage() {
     if (!user) return;
     setIsSaving(true);
     try {
-      // 1. Update Clerk user
-      await user.update({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-      });
+      // Directly update MongoDB profile via our API which now supports standard user fields
 
-      // 2. Update MongoDB profile (mocked network call)
-      // await fetch("/api/profile", { method: "PUT", body: JSON.stringify(formData) });
-      await new Promise(r => setTimeout(r, 800)); // simulate delay
+      // 2. Update MongoDB profile
+      const res = await fetch("/api/profile", { 
+        method: "PUT", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData) 
+      });
+      if (!res.ok) throw new Error("Failed to update DB");
       
       toast.success("Profile updated successfully!");
       setIsEditing(false);
@@ -124,10 +126,22 @@ export default function ProfilePage() {
   const handleDeleteAccount = async () => {
     if (!user) return;
     try {
-      await user.delete();
+      const res = await fetch("/api/profile", { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      
       toast.success("Account deleted.");
+      window.location.href = "/sign-in";
     } catch (e) {
       toast.error("Failed to delete account. Please try again.");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/";
+    } catch (error) {
+      toast.error("Failed to sign out.");
     }
   };
 
@@ -156,9 +170,11 @@ export default function ProfilePage() {
       {/* 1. TOP PROFILE SECTION */}
       <section className="flex flex-col items-center text-center space-y-6">
         <div className="relative group">
-          <img 
+          <Image 
             src={userAvatarUrl} 
             alt="User avatar" 
+            width={128}
+            height={128}
             className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover bg-gray-100"
           />
           {isEditing && (
@@ -403,7 +419,7 @@ export default function ProfilePage() {
                   <h4 className="font-bold text-gray-900">Sign Out</h4>
                   <p className="text-sm text-gray-500">Log out of your Traveloop account on this device.</p>
                 </div>
-                <Button variant="outline" className="text-gray-700" onClick={() => signOut()}>
+                <Button variant="outline" className="text-gray-700" onClick={handleLogout}>
                   <LogOut className="w-4 h-4 mr-2" /> Sign Out
                 </Button>
               </div>

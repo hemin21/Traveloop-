@@ -83,7 +83,7 @@ export default function TripNotesPage() {
   ];
   const trips = tripsData?.trips || (Array.isArray(tripsData) ? tripsData : mockTrips);
   const currentTrip = trips.find((t: any) => t._id === tripId) || tripData || { _id: tripId, name: "Paris & Rome Adventure" };
-  const mockStops = ["Paris", "Rome"]; // From trip details in a real scenario
+  const mockStops: string[] = tripData?.stops?.map((s: any) => s.city).filter(Boolean) || [];
 
   const mockNotes = [
     { _id: "n1", title: "Hotel Check-in Details", content: "Rome Hotel booking #12345. Ask for early check-in if possible. Also check if breakfast is included.", stop: "Rome", day: 4, date: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -94,14 +94,16 @@ export default function TripNotesPage() {
   useEffect(() => {
     if (notesData && notesData.notes) {
       setNotes(notesData.notes);
-    } else if (!isLoadingNotes) {
-      setNotes(mockNotes);
     }
   }, [notesData, isLoadingNotes]);
 
   // Derived & Sorted Data
   const sortedNotes = useMemo(() => {
-    return [...notes].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return [...notes].sort((a, b) => {
+      const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return dateB - dateA;
+    });
   }, [notes]);
 
   const notesByDay = useMemo(() => {
@@ -156,24 +158,35 @@ export default function TripNotesPage() {
       return;
     }
 
-    const newNote = {
-      _id: noteToEdit?._id || Date.now().toString(),
+    const payload = {
       title: formData.title,
       content: formData.content,
       stop: formData.stop,
-      day: formData.day ? parseInt(formData.day, 10) : null,
-      date: noteToEdit?.date || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      day: formData.day,
     };
 
-    if (noteToEdit) {
-      setNotes(notes.map(n => n._id === noteToEdit._id ? newNote : n));
-      toast.success("Note updated");
-      // MOCK API: await fetch(`/api/notes/${tripId}?noteId=${noteToEdit._id}`, { method: "PUT", ... })
-    } else {
-      setNotes([newNote, ...notes]);
-      toast.success("Note added");
-      // MOCK API: await fetch(`/api/notes/${tripId}`, { method: "POST", ... })
+    try {
+      if (noteToEdit) {
+        const res = await fetch(`/api/notes/${tripId}?noteId=${noteToEdit._id}`, { 
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const saved = await res.json();
+        setNotes(notes.map(n => n._id === noteToEdit._id ? saved : n));
+        toast.success("Note updated");
+      } else {
+        const res = await fetch(`/api/notes/${tripId}`, { 
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const saved = await res.json();
+        setNotes([saved, ...notes]);
+        toast.success("Note added");
+      }
+    } catch (e) {
+      toast.error("Failed to save note");
     }
 
     setIsNoteDialogOpen(false);
@@ -189,7 +202,7 @@ export default function TripNotesPage() {
     setNotes(notes.filter(n => n._id !== noteToDelete));
     setIsDeleteDialogOpen(false);
     toast.success("Note deleted");
-    // MOCK API: await fetch(`/api/notes/${tripId}?noteId=${noteToDelete}`, { method: "DELETE" })
+    await fetch(`/api/notes/${tripId}?noteId=${noteToDelete}`, { method: "DELETE" });
   };
 
   const toggleExpand = (id: string) => {
@@ -241,9 +254,9 @@ export default function TripNotesPage() {
               {note.stop} stop
             </div>
           )}
-          <div className="flex items-center gap-1.5 ml-auto text-gray-400" title={format(new Date(note.updatedAt), "MMMM d, yyyy 'at' h:mm a")}>
+          <div className="flex items-center gap-1.5 ml-auto text-gray-400" title={note.updatedAt ? format(new Date(note.updatedAt), "MMMM d, yyyy 'at' h:mm a") : ""}>
             <Clock className="w-3.5 h-3.5" />
-            {formatDistanceToNow(new Date(note.updatedAt))} ago
+            {note.updatedAt ? `${formatDistanceToNow(new Date(note.updatedAt))} ago` : "Just now"}
           </div>
         </div>
       </div>
@@ -280,7 +293,7 @@ export default function TripNotesPage() {
             <SelectContent>
               {trips.map((t: any) => (
                 <SelectItem key={t._id} value={t._id}>
-                  Trip: {t.name}
+                  Trip: {t.title || t.name || "Unknown"}
                 </SelectItem>
               ))}
             </SelectContent>

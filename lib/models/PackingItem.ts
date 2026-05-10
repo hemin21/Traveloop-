@@ -21,4 +21,7 @@ PackingItemSchema.virtual('id').get(function() { return this._id.toHexString(); 
 PackingItemSchema.set('toJSON', { virtuals: true });
 PackingItemSchema.set('toObject', { virtuals: true });
 
+// Index for fast lookups
+PackingItemSchema.index({ tripId: 1 }); // fetch all packing items for a trip
+
 export default mongoose.models.PackingItem || mongoose.model<IPackingItem>('PackingItem', PackingItemSchema);
